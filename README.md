@@ -2,9 +2,21 @@
 
 **Your music. Your algorithm.**
 
+[![CI](https://github.com/ariel-veraas/unshuffle/actions/workflows/ci.yml/badge.svg)](https://github.com/ariel-veraas/unshuffle/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](LICENSE)
+![Node](https://img.shields.io/badge/node-22%2B-22c55e)
+
 Unshuffle is an open-source music sequencing engine built around one question: what if shuffle were transparent and configurable instead of a black box?
 
 It connects to Spotify, lets you choose one of your playlists, applies explicit sequencing rules, audits the generated session, and can export that exact order back to Spotify.
+
+![Unshuffle dashboard](docs/dashboard.png)
+
+## Try it without a Spotify account
+
+Click **Try the demo · sample data** on the landing screen to explore every rule, the sequencing engine and the session audit with fixture data — no Spotify login required. It's the fastest way to see how the engine behaves before connecting a real account.
+
+![Unshuffle landing screen](docs/hero.png)
 
 ## Features
 
@@ -18,6 +30,7 @@ It connects to Spotify, lets you choose one of your playlists, applies explicit 
 - Adjustable chaos
 - Session audit metrics
 - Export to a new private Spotify playlist
+- Demo mode with sample data — no Spotify account needed to explore the engine
 - Responsive web interface
 - Automated engine tests and CI
 
@@ -81,6 +94,19 @@ npm run dev -- --host 127.0.0.1
 
 Open `http://127.0.0.1:5173/`.
 
+## Deploy
+
+Unshuffle is a static single-page app — no backend or database — so it deploys to [Vercel](https://vercel.com) with zero extra setup:
+
+1. Import the repo in Vercel (it auto-detects the Vite framework).
+2. Add the two environment variables from `.env.example` under Project Settings → Environment Variables:
+   - `VITE_SPOTIFY_CLIENT_ID`
+   - `VITE_SPOTIFY_REDIRECT_URI` — set to your production URL, e.g. `https://unshuffle.vercel.app/` (must include the trailing slash and match exactly, protocol included).
+3. In your Spotify Developer Dashboard, add that same URL under **Redirect URIs**.
+4. Redeploy so the build picks up the environment variables (Vite inlines them at build time).
+
+Anyone visiting the deployed link can use **Try the demo · sample data** without any Spotify setup. To let others log in with their own account, add them under **Users and Access** in the Spotify app dashboard — new apps stay in Development Mode until Spotify grants extended quota.
+
 ## How the engine works
 
 For every position in a session, Unshuffle scores the remaining candidates using:
@@ -117,6 +143,7 @@ GitHub Actions runs tests and a production build on pushes to `main` and pull re
 
 ## Current limitations
 
+- New Spotify Developer applications start in Development Mode, which only allows Spotify accounts explicitly added as testers in the app dashboard. To connect your own account when running locally, add your Spotify email under **Users and Access** in your app settings.
 - Spotify Web API capabilities depend on the application's access mode and account eligibility.
 - Rediscovery currently uses the recent history Spotify exposes, not a complete lifetime listening archive.
 - The first engine focuses on recurrence and sequencing rather than Spotify audio-feature analysis.

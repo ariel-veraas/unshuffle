@@ -3,11 +3,27 @@ import type { Playlist, Track } from "../types";
 
 const API = "https://api.spotify.com/v1";
 
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  attempt = 0,
+): Promise<Response> {
+  const response = await fetch(url, init);
+
+  if (response.status === 429 && attempt < 3) {
+    const retryAfter = Number(response.headers.get("Retry-After")) || 1;
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+    return fetchWithRetry(url, init, attempt + 1);
+  }
+
+  return response;
+}
+
 async function spotify<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
-  const response = await fetch(API + path, {
+  const response = await fetchWithRetry(API + path, {
     ...init,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -51,7 +67,7 @@ async function collectPages(path: string) {
     const token = await getAccessToken();
     if (!token) throw new Error("Not authenticated");
 
-    const response = await fetch(next, {
+    const response = await fetchWithRetry(next, {
       headers: { Authorization: `Bearer ${token}` },
     });
 

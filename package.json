@@ -1,8 +1,23 @@
 {
   "name": "unshuffle",
+  "description": "A transparent, user-controlled sequencing engine for Spotify playlists — an alternative to black-box shuffle.",
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "license": "MIT",
+  "author": "Ariel Vera",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ariel-veraas/unshuffle.git"
+  },
+  "keywords": [
+    "spotify",
+    "spotify-api",
+    "shuffle",
+    "playlist",
+    "react",
+    "typescript"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

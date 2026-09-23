@@ -8,6 +8,7 @@ import {
   getPlaylists,
   getRecentTracks,
 } from "./spotify/api";
+import { demoPlaylists, demoRecentTracks, getDemoTracks } from "./spotify/demoData";
 import type { Playlist, ShuffleSettings, Track } from "./types";
 
 const defaults: ShuffleSettings = {
@@ -19,8 +20,10 @@ const defaults: ShuffleSettings = {
   chaos: 65,
 };
 
+type Mode = "guest" | "demo" | "live";
+
 export default function App() {
-  const [authenticated, setAuthenticated] = useState(false);
+  const [mode, setMode] = useState<Mode>("guest");
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [selected, setSelected] = useState("");
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -35,7 +38,7 @@ export default function App() {
       try {
         await handleCallback();
         const token = await getAccessToken();
-        setAuthenticated(Boolean(token));
+        if (token) setMode("live");
       } catch (error) {
         setStatus(
           error instanceof Error ? error.message : "Authentication failed",
@@ -45,7 +48,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!authenticated) return;
+    if (mode === "guest") return;
+
+    if (mode === "demo") {
+      setPlaylists(demoPlaylists);
+      setRecent(demoRecentTracks);
+      setStatus("Loaded demo playlists with sample data.");
+      return;
+    }
 
     void (async () => {
       setBusy(true);
@@ -67,7 +77,7 @@ export default function App() {
         setBusy(false);
       }
     })();
-  }, [authenticated]);
+  }, [mode]);
 
   const metrics = useMemo(
     () => calculateMetrics(sequence, recent.map((track) => track.uri)),
@@ -78,6 +88,17 @@ export default function App() {
     setSelected(id);
     setSequence([]);
     if (!id) return;
+
+    if (mode === "demo") {
+      const data = getDemoTracks(id);
+      setTracks(data);
+      setSettings((current) => ({
+        ...current,
+        sessionSize: Math.min(current.sessionSize, data.length),
+      }));
+      setStatus(`Loaded ${data.length} sample tracks.`);
+      return;
+    }
 
     setBusy(true);
     try {
@@ -112,6 +133,11 @@ export default function App() {
   async function saveToSpotify() {
     if (!sequence.length) return;
 
+    if (mode === "demo") {
+      setStatus("Connect your real Spotify account to export sessions.");
+      return;
+    }
+
     setBusy(true);
     try {
       const playlist = playlists.find((item) => item.id === selected);
@@ -128,7 +154,7 @@ export default function App() {
     }
   }
 
-  if (!authenticated) {
+  if (mode === "guest") {
     return (
       <main className="shell hero">
         <div className="eyebrow">YOUR MUSIC. YOUR ALGORITHM.</div>
@@ -136,14 +162,19 @@ export default function App() {
         <p className="lede">
           A transparent, user-controlled alternative to black-box shuffle.
         </p>
-        <button
-          className="primary"
-          onClick={() =>
-            login().catch((error: Error) => setStatus(error.message))
-          }
-        >
-          Connect Spotify
-        </button>
+        <div className="actions">
+          <button
+            className="primary"
+            onClick={() =>
+              login().catch((error: Error) => setStatus(error.message))
+            }
+          >
+            Connect Spotify
+          </button>
+          <button className="ghost" onClick={() => setMode("demo")}>
+            Try the demo · sample data
+          </button>
+        </div>
         <p className="status">{status}</p>
       </main>
     );
@@ -153,17 +184,25 @@ export default function App() {
     <main className="shell">
       <header>
         <div>
-          <div className="eyebrow">SEQUENCING LAB</div>
+          <div className="eyebrow">
+            {mode === "demo" ? "DEMO · SAMPLE DATA" : "SEQUENCING LAB"}
+          </div>
           <h1>Unshuffle</h1>
         </div>
         <button
           className="ghost"
           onClick={() => {
-            logout();
-            location.reload();
+            if (mode === "live") logout();
+            setMode("guest");
+            setPlaylists([]);
+            setTracks([]);
+            setRecent([]);
+            setSequence([]);
+            setSelected("");
+            setStatus("Ready.");
           }}
         >
-          Disconnect
+          {mode === "demo" ? "Exit demo" : "Disconnect"}
         </button>
       </header>
 
